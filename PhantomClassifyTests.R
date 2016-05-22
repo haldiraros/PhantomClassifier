@@ -37,9 +37,10 @@ phantomsTest <- function(k=3,alpha=0.5){
   
   data_train <- data[ inTraining,]
   data_test <- data[-inTraining,]
-  
-  #classify 1st time
-  modFit <- train(Species ~ ., data=data_train, method="rf", prox=TRUE)
+  print(dim(data_train))
+  ##classify 1st time
+  #modFit <- train(Species ~ ., data=data_train, method="rf", prox=TRUE)
+  modFit <-  train(Species ~ ., data=data_train, method = "knn", tuneLength = 1,preProc = c("center", "scale"))
   
   pred <- predict(modFit, data_test)
   cm <- confusionMatrix(data = pred, data_test$Species)
@@ -74,8 +75,11 @@ phantomsTest <- function(k=3,alpha=0.5){
   #add phantoms just to train data (first)
   data_train2 <- rbind(data_train,phantoms)
   
-  #classify 2nd time
-  modFit2 <- train(Species ~ ., data=data_train2, method="rf", prox=TRUE)
+  print(dim(data_train2))
+  
+  ##classify 2nd time
+  #modFit2 <- train(Species ~ ., data=data_train2, method="rf", prox=TRUE)
+  modFit2 <-  train(Species ~ ., data=data_train2, method = "knn", tuneLength = 1,preProc = c("center", "scale"))
   
   pred2 <- predict(modFit2, data_train2)
   cm2 <- confusionMatrix(data = pred, data_test$Species)
