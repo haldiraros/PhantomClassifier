@@ -5,3 +5,8 @@ Supervisor:
 Mikołaj Morzy
 ## Env:
 -R version 3.3.0
+### Libraries:
+ - carret
+ - datasets
+ - FNN
+ - dplyr
