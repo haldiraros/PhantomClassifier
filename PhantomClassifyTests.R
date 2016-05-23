@@ -19,6 +19,30 @@ createPhantoms <- function(x,Y,alpha=0.5,classN){
 }
 
 
+metaPhantom <-function(data,errors,classVariableName,k,alpha){
+  err_split <- split(errors,errors[classVariableName])
+  
+  #init phantoms
+  phantoms <- data[0,]
+  
+  for(cl in names(err_split)){
+    err_sub <- err_split[[cl]]
+    if(dim(err_sub)[1]>0){
+      data_sub<-data[data[,classVariableName]==cl,]
+      #basic knn - works just for numeric data
+      closeObj <- knnx.index(data_sub[,-which(names(data_sub)%in% c(classVariableName))],
+                             err_sub[,-which(names(err_sub)%in% c(classVariableName))],k=k+1)
+      closeObj <- closeObj[,-1] #remove error object that is always closest
+      
+      for(x in 1:dim(err_sub)[1]){
+        closeObj_ <- if(is.null(dim(closeObj))){ closeObj }else{ closeObj[x,] }
+        pha <- createPhantoms(err_sub[x,],data_sub[closeObj_,],alpha,classVariableName)
+        phantoms <- rbind(phantoms,pha)
+      }
+    }
+  }
+  return(phantoms)
+}
 ## test functiion for all - 'til I get on with a reporting script
 phantomsTest <- function(k=3,alpha=0.5){
   library(caret)
@@ -40,7 +64,7 @@ phantomsTest <- function(k=3,alpha=0.5){
   print(dim(data_train))
   ##classify 1st time
   #modFit <- train(Species ~ ., data=data_train, method="rf", prox=TRUE)
-  modFit <-  train(Species ~ ., data=data_train, method = "knn", tuneLength = 1,preProc = c("center", "scale"))
+  modFit <-  train(Species ~ ., data=data_train, method = "knn", tuneLength = 3,preProc = c("center", "scale"))
   
   pred <- predict(modFit, data_test)
   cm <- confusionMatrix(data = pred, data_test$Species)
@@ -50,27 +74,13 @@ phantomsTest <- function(k=3,alpha=0.5){
   data_test$predRight <- pred==data_test$Species
   errors <- filter(data_test,predRight==FALSE) %>% select(-predRight)
   
-  err_split <- split(errors,errors$Species)
-  
-  
-  phantoms <- data[0,]
-  
-  for(cl in names(err_split)){
-    err_sub <- err_split[[cl]]
-    if(dim(err_sub)[1]>0){
-      data_sub <- data %>% filter(Species == cl)
-      closeObj <- knnx.index(data_sub[,-5],err_sub[,-5],k=k+1)
-      closeObj <- closeObj[,-1] #remove error object
-      
-      for(x in 1:dim(err_sub)[1]){
-        closeObj_ <- if(is.null(dim(closeObj))){ closeObj }else{ closeObj[x,] }
-        pha <- createPhantoms(err_sub[x,],data_sub[closeObj_,],alpha,'Species')
-        phantoms <- rbind(phantoms,pha)
-      }
-    }
-  }
+  classVariableName <- 'Species'
+
+  #call phantom generalization
+  phantoms <- metaPhantom(data,errors,classVariableName,k,alpha)
   
   print(phantoms)
+
   
   #add phantoms just to train data (first)
   data_train2 <- rbind(data_train,phantoms)
@@ -79,7 +89,7 @@ phantomsTest <- function(k=3,alpha=0.5){
   
   ##classify 2nd time
   #modFit2 <- train(Species ~ ., data=data_train2, method="rf", prox=TRUE)
-  modFit2 <-  train(Species ~ ., data=data_train2, method = "knn", tuneLength = 1,preProc = c("center", "scale"))
+  modFit2 <-  train(Species ~ ., data=data_train2, method = "knn", tuneLength = 3,preProc = c("center", "scale"))
   
   pred2 <- predict(modFit2, data_train2)
   cm2 <- confusionMatrix(data = pred, data_test$Species)
