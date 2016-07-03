@@ -22,22 +22,46 @@ metaPhantom <-function(form,data,errors,k,alpha){
   #get columns with nominal values
   nomCols <- which(sapply(sapply(data[,-ncol(data)],class),function(x) any(x %in% c('factor','character'))))
   if(length(nomCols)==0) nomCols<-NULL
-  err_split <- split(errors,errors[,ncol(errors)])
   
+  #normalize for latter KNN
+  numericalVals<-data[,-c(nomCols,ncol(data))]
+  minVals <-apply(numericalVals,2,min)
+  maxVals <-apply(numericalVals,2,max)
+  ranges <- maxVals-minVals
+  normalizedVals<-scale(numericalVals,minVals,ranges)
+  
+  nominalPenalty <- (median(sapply(normalizedVals,sd)))^2
   #init phantoms
   phantoms <- data[0,]
+  
+  err_split <- split(errors,errors[,ncol(errors)])
   
   for(cl in names(err_split)){
     err_sub <- err_split[[cl]]
     if(dim(err_sub)[1]>0){
       data_sub<-data[data[,ncol(data)]==cl,]
       #basic knn - works just for numeric data for now
-      closeObj <- knnx.index(data_sub[,-c(nomCols,ncol(data_sub))],
-                             err_sub[,-c(nomCols,ncol(err_sub))],k=k+1)
-      closeObj <- closeObj[,-1] #remove error object - it is always closest
-      
+      if(is.null(nomCols)){
+        closeObj <- knnx.index(data_sub[,-c(nomCols,ncol(data_sub))],
+                               err_sub[,-c(nomCols,ncol(err_sub))],k=k+1)
+        closeObj <- closeObj[,-1] #remove error object - it is always closest
+      }
       for(x in 1:dim(err_sub)[1]){
-        closeObj_ <- if(is.null(dim(closeObj))){ closeObj }else{ closeObj[x,] }
+        closeObj_<-NULL
+        if(is.null(nomCols)){
+          closeObj_ <- if(is.null(dim(closeObj))){ closeObj }else{ closeObj[x,] }
+        }else{
+          closeNumericals<-data_sub[,-c(nomCols,ncol(data_sub))]
+          numericalErr<-err_sub[x,-c(nomCols,ncol(err_sub))]
+          d1<-scale(closeNumericals,numericalErr,ranges)
+          dis_numeric <- drop(d1^2 %*% rep(1, ncol(d1)))
+          
+          nomDiff<-data_sub[,nomCols]!=err_sub[rep(1,nrow(data_sub)),nomCols]
+          nomPenalties<-apply(nomDiff,1,sum)
+          dis_total<-dis+(nomPenalties*nominalPenalty)
+          kNNs<-order(dis_total)[2:(k+1)]
+          closeObj_<-data_sub[kNNs,]
+        }
         pha <- createPhantoms(err_sub[x,],data_sub[closeObj_,],k,alpha,nomCols)
         phantoms <- rbind(phantoms,pha)
       }
@@ -69,7 +93,7 @@ getNominalValues <- function(error,neighbours,nominals,n){
 }
 
 #calculation of a single phantom object
-## !!! DEPRECATED !!! doing it with vector operations now
+## !!! DEPRECATED !!! doing it with vector operations now. Keeping as safety for now
 calculatePhantom <- function(a,object,alpha,nominal){
   #simple numeric objects
   res <- a
