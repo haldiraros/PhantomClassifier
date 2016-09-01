@@ -7,6 +7,23 @@ phantomsTest <- function(k=3,alpha=0.5){
   library(datasets)
   library(dplyr)
   
+  calcStatistics <- function (prediction,oracle) {
+    cm2 <- confusionMatrix(data=vPrecision,oracle)
+    print(cm2)
+    vPrecision <- cm2$byClass['Pos Pred Value']    
+    vRecall <- cm2$byClass['Sensitivity']
+    vAcc <- cm2$overall['Accuracy']
+    vf_measure <- 2 * ((vPrecision * vRecall) / (vPrecision + vRecall))
+    vKappa<- cm2$overall['Kappa']
+    #library(irr) #if weights needed
+    #Sol <-cbind(prediction,oracle)
+    #vKappa<-kappa2(Sol,"squared")
+    
+    library(pROC)
+    vroc<-roc(prediction,oracle)$auc[1]
+    
+  }
+  
   #read data
   # exclude the separable class for now
   #### iris
@@ -56,7 +73,11 @@ phantomsTest <- function(k=3,alpha=0.5){
                     method = "knn", tuneLength = 3,preProc = c("center", "scale"))
   
   pred2 <- predict(modFit2, data_test[,-ncol(data_test)])
-  cm2 <- confusionMatrix(data = pred2, data_test[,ncol(data_test)])
-  print(cm2)
+  
+  
+  
+  calcStatistics(pred2,data_test[,ncol(data_test)])
+
   
 }
+

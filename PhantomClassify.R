@@ -8,7 +8,7 @@
 metaPhantom <-function(form,data,errors,k,alpha){
   #load needed library
   library(FNN)
-  
+  if(nrow(errors)==0) {return(data[0,])}
   # the column where the target variable is
   targetVar <- which(names(data) == as.character(form[[2]]))
   #make target value column be last column
@@ -33,6 +33,7 @@ metaPhantom <-function(form,data,errors,k,alpha){
   nominalPenalty <- (median(sapply(normalizedVals,sd)))^2
   #init phantoms
   phantoms <- data[0,]
+
   
   err_split <- split(errors,errors[,ncol(errors)])
   
@@ -46,23 +47,23 @@ metaPhantom <-function(form,data,errors,k,alpha){
                                err_sub[,-c(nomCols,ncol(err_sub))],k=k+1)
         closeObj <- closeObj[,-1] #remove error object - it is always closest
       }
-      for(x in 1:dim(err_sub)[1]){
+      for(subLoop in 1:dim(err_sub)[1]){
         closeObj_<-NULL
         if(is.null(nomCols)){
-          closeObj_ <- if(is.null(dim(closeObj))){ closeObj }else{ closeObj[x,] }
+          closeObj_ <- if(is.null(dim(closeObj))){ closeObj }else{ closeObj[subLoop,] }
         }else{
           closeNumericals<-data_sub[,-c(nomCols,ncol(data_sub))]
-          numericalErr<-err_sub[x,-c(nomCols,ncol(err_sub))]
+          numericalErr<-as.numeric(err_sub[subLoop,-c(nomCols,ncol(err_sub))])
           d1<-scale(closeNumericals,numericalErr,ranges)
           dis_numeric <- drop(d1^2 %*% rep(1, ncol(d1)))
           
           nomDiff<-data_sub[,nomCols]!=err_sub[rep(1,nrow(data_sub)),nomCols]
           nomPenalties<-apply(nomDiff,1,sum)
-          dis_total<-dis+(nomPenalties*nominalPenalty)
-          kNNs<-order(dis_total)[2:(k+1)]
-          closeObj_<-data_sub[kNNs,]
+          dis_total<-dis_numeric+(nomPenalties*nominalPenalty)
+          closeObj_<-order(dis_total)[2:(k+1)]
+          # closeObj_<-data_sub[kNNs,]
         }
-        pha <- createPhantoms(err_sub[x,],data_sub[closeObj_,],k,alpha,nomCols)
+        pha <- createPhantoms(err_sub[subLoop,],data_sub[closeObj_,],k,alpha,nomCols)
         phantoms <- rbind(phantoms,pha)
       }
     }
@@ -70,7 +71,7 @@ metaPhantom <-function(form,data,errors,k,alpha){
   
   #reset data column order
   if (targetVar < ncol(data)) {
-    newExs <- newExs[,cols]
+    phantoms <- phantoms[,cols]
     data <- data[,cols]
     errors<- errors[,cols]
   }
@@ -84,7 +85,7 @@ metaPhantom <-function(form,data,errors,k,alpha){
 
 getNominalValues <- function(error,neighbours,nominals,n){
   t <- rbind(error,neighbours)[,nominals]
-  counts<-lapply(nominals,function(x) plyr::count(t,x))
+  counts<-lapply(1:length(nominals),function(x) plyr::count(t,x))
   nomValues<- lapply(counts,function(x) {
                             x[,2]<-prop.table(x[,2]) 
                             sample(x[,1],size=n,replace=TRUE,prob=x[,2])
