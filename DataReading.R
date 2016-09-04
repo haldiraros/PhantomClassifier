@@ -8,11 +8,14 @@ readTestData <- function(datasetName){
     ##collapse dataset
     data <- iris %>% filter(Species!='setosa') 
     data$Species <- factor(data$Species)
+    colnames(data)[ncol(data)] <- "Class"
+    
   }
   
   #### Sonar
   if(datasetName=="Sonar"){
     library(mlbench)
+    data(Sonar)
     data <- Sonar
   }
   
@@ -49,7 +52,9 @@ readTestData <- function(datasetName){
                                                                      "education_num","marital", "occupation", "relationship", "race","sex",
                                                                      "capital_gain", "capital_loss", "hr_per_week","country", "income"),fill=FALSE,strip.white=T)
     data_pre<-rbind(data1,data2)
-    data<-data_pre[,!names(data_pre) %in% c("education_num")]
+  
+    data<-dplyr::filter(data_pre[,!names(data_pre) %in% c("education_num")],country!='Holand-Netherlands')
+    
     colnames(data)[ncol(data)] <- "Class"
   }
   #### mammography
