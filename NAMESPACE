@@ -1,3 +1,0 @@
-import(FNN,plyr)
-importFrom("stats", "median", "sd")
-export("metaPhantom")
