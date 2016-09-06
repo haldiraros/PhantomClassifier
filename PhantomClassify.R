@@ -18,25 +18,25 @@ metaPhantom <-function(form,data,errors,k,alpha){
     data <-  data[,cols]
     errors<- errors[,cols]
   }
-  
+
   #get columns with nominal values
   nomCols <- which(sapply(sapply(data[,-ncol(data)],class),function(x) any(x %in% c('factor','character'))))
   if(length(nomCols)==0) nomCols<-NULL
-  
+
   #normalize for latter KNN
   numericalVals<-data[,-c(nomCols,ncol(data))]
   minVals <-apply(numericalVals,2,min)
   maxVals <-apply(numericalVals,2,max)
   ranges <- maxVals-minVals
   normalizedVals<-scale(numericalVals,minVals,ranges)
-  
-  nominalPenalty <- (median(sapply(normalizedVals,sd)))^2
+
+  nominalPenalty <- (median(apply(normalizedVals,2,sd)))^2
   #init phantoms
   phantoms <- data[0,]
 
-  
+
   err_split <- split(errors,errors[,ncol(errors)])
-  
+
   for(cl in names(err_split)){
     err_sub <- err_split[[cl]]
     if(dim(err_sub)[1]>0){
@@ -56,9 +56,13 @@ metaPhantom <-function(form,data,errors,k,alpha){
           numericalErr<-as.numeric(err_sub[subLoop,-c(nomCols,ncol(err_sub))])
           d1<-scale(closeNumericals,numericalErr,ranges)
           dis_numeric <- drop(d1^2 %*% rep(1, ncol(d1)))
-          
+
           nomDiff<-data_sub[,nomCols]!=err_sub[rep(1,nrow(data_sub)),nomCols]
-          nomPenalties<-apply(nomDiff,1,sum)
+          if(is.null(dim(nomDiff))){
+            nomPenalties<-nomDiff
+          }else{
+            nomPenalties<-apply(nomDiff,1,sum)
+          }
           dis_total<-dis_numeric+(nomPenalties*nominalPenalty)
           closeObj_<-order(dis_total)[2:(k+1)]
           # closeObj_<-data_sub[kNNs,]
@@ -68,26 +72,26 @@ metaPhantom <-function(form,data,errors,k,alpha){
       }
     }
   }
-  
+
   #reset data column order
   if (targetVar < ncol(data)) {
     phantoms <- phantoms[,cols]
     data <- data[,cols]
     errors<- errors[,cols]
   }
-  
+
   #rename phantom rownames
   rownames(phantoms) <- NULL
   rownames(phantoms) <-paste0('pha_',rownames(phantoms))
   return(phantoms)
-  
+
 }
 
 getNominalValues <- function(error,neighbours,nominals,n){
   t <- rbind(error,neighbours)[,nominals]
   counts<-lapply(1:length(nominals),function(x) plyr::count(t,x))
   nomValues<- lapply(counts,function(x) {
-                            x[,2]<-prop.table(x[,2]) 
+                            x[,2]<-prop.table(x[,2])
                             sample(x[,1],size=n,replace=TRUE,prob=x[,2])
                           })
   return( nomValues)
@@ -102,7 +106,7 @@ createPhantoms <- function(x,Y,k=3,alpha=0.5,nominals=NULL){
   Y_classless <- Y[,-ncol(Y)]
   #base version - just numeric
   phantoms <- Y[0,]
-  
+
   if(!is.null(nominals)){
     nominalValues<-getNominalValues(x_classless,Y_classless,nominals,k)
   }
