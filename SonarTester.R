@@ -8,7 +8,7 @@
   ###Init
   k <- 3
   alpha <- 0.5
-  testAlg <- "nb" # tree, lr, nb, KNN
+  testAlg <- "KNN" # tree, lr, nb, KNN
   testForm <- Class ~ .
   set.seed(4228)
   iterations<-40
@@ -26,7 +26,7 @@
                         AUC=numeric(0))
   #############################################################
   ###READ DATA###
-  dataName<-"Sonar"
+  dataName<-"Spambase"
   data<-readTestData(dataName)
 
 

@@ -57,11 +57,11 @@ readTestData <- function(datasetName){
 
     colnames(data)[ncol(data)] <- "Class"
   }
-  #### mammography
+  #### Mammography
   if(datasetName=="Mammography"){
     library(R.matlab)
     readDataMat<- readMat("data/Mammography/mammography.mat")
-    data<-unique(data.frame(readDataMat[[1]],Class=factor(readDataMat[[2]])))
+    data<-unique(data.frame(readDataMat[[1]],Class=factor((readDataMat[[2]]!=1)*1)))
   }
   #### Wine
   if(datasetName=="Wine"){
@@ -77,12 +77,14 @@ readTestData <- function(datasetName){
   if(datasetName=="Ionosphere"){
     data<-read.csv("data/Ionosphere/ionosphere.data",header=FALSE,fill=FALSE,strip.white=T)
     colnames(data)[ncol(data)] <- "Class"
+    data<-data[,!names(data) %in% c("V2")]
     data[['Class']]<-factor(data[['Class']])
   }
   #### Spambase
   if(datasetName=="Spambase"){
     data<-read.csv("data/Spambase/spambase.data",header=FALSE,fill=FALSE,strip.white=T)
     colnames(data)[ncol(data)] <- "Class"
+    data$Class <- (data$Class!=1)*1
     data[['Class']]<-factor(data[['Class']])
   }
   #### Abalone
@@ -97,11 +99,15 @@ readTestData <- function(datasetName){
 
   #### Oil
   if(datasetName=="Oil"){
+    library(foreign)
     data<-read.arff("data/Oil/oil.arff")
     cols <- 1:ncol(data)
     cols[c(1,ncol(data))] <- cols[c(ncol(data),1)]
     data <-data[,cols]
+    data<-data[,!names(data) %in% c("attr23","attr33")]
     colnames(data)[ncol(data)] <- "Class"
+    data[['Class']]<-(data[['Class']]!=1)*1
+    data[['Class']]<-factor(data[['Class']])
   }
 
   return(data)
