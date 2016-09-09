@@ -23,6 +23,7 @@ readTestData <- function(datasetName){
   if(datasetName=="PID"){
     data<-read.csv("data/PID/pima-indians-diabetes.data",header=FALSE,fill=FALSE,strip.white=T)
     colnames(data)[ncol(data)] <- "Class"
+    data[['Class']]<-(data[['Class']]!=1)*1
     data[['Class']]<-factor(data[['Class']])
   }
 
@@ -30,6 +31,7 @@ readTestData <- function(datasetName){
   if(datasetName=="Phoneme"){
     data<-read.csv("data/Phoneme/phoneme.dat",sep="",header=FALSE,fill=FALSE,strip.white=T)
     colnames(data)[ncol(data)] <- "Class"
+    data[['Class']]<-(data[['Class']]!=1)*1
     data[['Class']]<-factor(data[['Class']])
 
   }
@@ -56,6 +58,8 @@ readTestData <- function(datasetName){
     data<-dplyr::filter(data_pre[,!names(data_pre) %in% c("education_num")],country!='Holand-Netherlands')
 
     colnames(data)[ncol(data)] <- "Class"
+    data[['Class']]<-(data[['Class']]!=">50K")*1
+    data[['Class']]<-factor(data[['Class']])
   }
   #### Mammography
   if(datasetName=="Mammography"){
