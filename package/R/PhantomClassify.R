@@ -41,7 +41,7 @@ metaPhantom <-function(form, data, errors,
   ranges <- maxVals-minVals
   normalizedVals<-scale(numericalVals,minVals,ranges)
 
-  nominalPenalty <- (stats::median(sapply(normalizedVals,stats::sd)))^2
+  nominalPenalty <- (stats::median(apply(normalizedVals,2,stats::sd)))^2
   #init phantoms
   phantoms <- data[0,]
 
@@ -69,7 +69,11 @@ metaPhantom <-function(form, data, errors,
           dis_numeric <- drop(d1^2 %*% rep(1, ncol(d1)))
 
           nomDiff<-data_sub[,nomCols]!=err_sub[rep(1,nrow(data_sub)),nomCols]
-          nomPenalties<-apply(nomDiff,1,sum)
+          if(is.null(dim(nomDiff))){
+            nomPenalties<-nomDiff
+          }else{
+            nomPenalties<-apply(nomDiff,1,sum)
+          }
           dis_total<-dis_numeric+(nomPenalties*nominalPenalty)
           closeObj_<-order(dis_total)[2:(k+1)]
           # closeObj_<-data_sub[kNNs,]
