@@ -41,14 +41,14 @@ metaPhantom <-function(form,data,errors,k=3,alpha=0.5){
     err_sub <- err_split[[cl]]
     if(dim(err_sub)[1]>0){
       data_sub<-data[data[,ncol(data)]==cl,]
-    if(is.null(nomCols)){ #if there are no nominal attributes
+    if(is.null(nomCols)){ #if there are no nominal attributes do basic KNN
         closeObj <- knnx.index(data_sub[,-c(nomCols,ncol(data_sub))],
                                err_sub[,-c(nomCols,ncol(err_sub))],k=k+1)
         closeObj <- closeObj[,-1] #remove error object - it is always closest
       }
       for(subLoop in 1:dim(err_sub)[1]){
         closeObj_<-NULL
-        if(is.null(nomCols)){ #if there are no nominal attributes
+        if(is.null(nomCols)){ #if there are no nominal attributes use calculated KNN
           closeObj_ <- if(is.null(dim(closeObj))){ closeObj }else{ closeObj[subLoop,] }
         }else{ #if there are nominal attributes
           #calculate object distanses using just numeric value
@@ -94,7 +94,7 @@ getNominalValues <- function(error,neighbours,nominals,n){
   counts<-lapply(1:length(nominals),function(x) plyr::count(t,x)) # get distribution of nominal values
   nomValues<- lapply(counts,function(x) {
                             x[,2]<-prop.table(x[,2]) #probability of each value for an attribute
-                            sample(x[,1],size=n,replace=TRUE,prob=x[,2]) # pick n values for phantoms
+                            sample(x[,1],size=n,replace=TRUE,prob=x[,2]) # sample n values for phantoms with replacement
                           })
   return( nomValues)
 }
@@ -103,13 +103,13 @@ getNominalValues <- function(error,neighbours,nominals,n){
 # x - misclassified object
 # Y - closest objects of same class for object x
 # alpha - how close to object should phantoms be located in [0;1]
-createPhantoms <- function(x,Y,k=3,alpha=0.5,nominals=NULL){
+createPhantoms <- function(x,Y,k,alpha,nominals=NULL){
   x_classless <- x[,-ncol(x)]
   Y_classless <- Y[,-ncol(Y)]
 
   phantoms <- Y[0,]
 
-  if(!is.null(nominals)){ # get phantom values if needed
+  if(!is.null(nominals)){ # get phantom nominal values if needed
     nominalValues<-getNominalValues(x_classless,Y_classless,nominals,k)
   }
   # calculate phantoms
