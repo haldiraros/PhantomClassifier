@@ -26,7 +26,7 @@
                         AUC=numeric(0))
   #############################################################
   ###READ DATA###
-  dataName<-"Abalone"
+  dataName<-"Mammography"
   data<-readTestData(dataName)
 
 
@@ -39,13 +39,9 @@
     vAcc <- cm2$overall[['Accuracy']]
     vF_measure <- 2 * ((vPrecision * vRecall) / (vPrecision + vRecall))
     vKappa<- cm2$overall[['Kappa']]
-    #library(irr) #if weights needed
-    #Sol <-cbind(prediction,oracle)
-    #vKappa<-kappa2(Sol,"squared")
 
     library(pROC)
     vRoc<-roc(oracle,probs)$auc[1]
-    #vRoc<-auc(prediction,oracle)[1]
     return( list(precision=vPrecision,
              recall=vRecall,
              accuracy=vAcc,
